@@ -53,6 +53,7 @@ function newGame() {
   stopTimer();
   moves = 0;
   seconds = 0;
+  isAnimating = false;
   movesEl.textContent = '0';
   timerEl.textContent = '00:00';
   overlay.classList.remove('show');
@@ -67,7 +68,6 @@ function newGame() {
 }
 
 function shuffle() {
-  // Perform random valid moves to guarantee solvable state
   let lastEmpty = -1;
   for (let i = 0; i < 300; i++) {
     const neighbors = getNeighbors(emptyIndex).filter(n => n !== lastEmpty);
@@ -93,72 +93,112 @@ function swap(a, b) {
   [board[a], board[b]] = [board[b], board[a]];
 }
 
-function tryMove(tileIndex) {
-  if (isAnimating) return;
-  if (!getNeighbors(emptyIndex).includes(tileIndex)) return;
+// ===========================
+// Move Logic
+// ===========================
 
+// 클릭/탭한 타일 인덱스를 받아 이동 가능 여부 판단 후 처리
+// - 빈칸과 같은 행 또는 열이면 사이의 모든 타일을 한꺼번에 이동
+// - 같은 행/열이 아니면 무시
+function handleTileClick(tileIndex) {
+  if (isAnimating) return;
+  if (board[tileIndex] === 0) return;
+
+  const eRow = Math.floor(emptyIndex / SIZE);
+  const eCol = emptyIndex % SIZE;
+  const tRow = Math.floor(tileIndex / SIZE);
+  const tCol = tileIndex % SIZE;
+
+  // 이동할 타일들의 순서: 클릭한 타일 → 빈칸에 인접한 타일
+  let sequence = [];
+
+  if (tRow === eRow && tCol !== eCol) {
+    // 같은 행: 좌우 이동
+    const step = tCol < eCol ? 1 : -1;
+    for (let c = tCol; c !== eCol; c += step) {
+      sequence.push(tRow * SIZE + c);
+    }
+  } else if (tCol === eCol && tRow !== eRow) {
+    // 같은 열: 상하 이동
+    const step = tRow < eRow ? 1 : -1;
+    for (let r = tRow; r !== eRow; r += step) {
+      sequence.push(r * SIZE + tCol);
+    }
+  } else {
+    return; // 이동 불가 위치
+  }
+
+  if (sequence.length === 0) return;
+
+  // 게임 시작
   if (!gameActive) {
     gameActive = true;
     startTimer();
   }
 
-  const value = board[tileIndex];
-  const destIndex = emptyIndex; // 이동 목적지(현재 빈칸 위치)를 미리 저장
-  swap(tileIndex, emptyIndex);
-  emptyIndex = tileIndex;
-  moves++;
+  // 각 타일의 이동 목적지 계산 (보드 업데이트 전)
+  // sequence[k] → sequence[k+1], 마지막 타일 → emptyIndex
+  const destinations = sequence.map((_, k) =>
+    k < sequence.length - 1 ? sequence[k + 1] : emptyIndex
+  );
+
+  // 보드 상태 업데이트 (빈칸 쪽부터 처리)
+  for (let k = sequence.length - 1; k >= 0; k--) {
+    board[destinations[k]] = board[sequence[k]];
+  }
+  board[sequence[0]] = 0;
+  emptyIndex = sequence[0];
+
+  moves += sequence.length;
   movesEl.textContent = moves;
 
-  animateTile(tileElements[value], tileIndex, destIndex);
-
-  if (isSolved()) {
-    setTimeout(showWin, 350);
-  }
+  // 모든 타일 동시 애니메이션
+  animateTiles(sequence, destinations);
 }
 
-function isSolved() {
-  for (let i = 0; i < 15; i++) {
-    if (board[i] !== i + 1) return false;
+// 방향키/스와이프: 빈칸 인접 타일 1개만 이동
+function moveDirKey(dir) {
+  if (isAnimating) return;
+  const eRow = Math.floor(emptyIndex / SIZE);
+  const eCol = emptyIndex % SIZE;
+  let targetIdx = -1;
+
+  switch (dir) {
+    case 'up':    if (eRow < SIZE - 1) targetIdx = emptyIndex + SIZE; break;
+    case 'down':  if (eRow > 0)        targetIdx = emptyIndex - SIZE; break;
+    case 'left':  if (eCol < SIZE - 1) targetIdx = emptyIndex + 1;    break;
+    case 'right': if (eCol > 0)        targetIdx = emptyIndex - 1;    break;
   }
-  return board[15] === 0;
+  if (targetIdx !== -1) handleTileClick(targetIdx);
 }
 
 // ===========================
 // Rendering
 // ===========================
-function getTileSize() {
-  const boardRect = boardEl.getBoundingClientRect();
-  const gap = parseFloat(getComputedStyle(boardEl).gap) || 8;
-  const padding = parseFloat(getComputedStyle(boardEl).padding) || 8;
-  return (boardRect.width - padding * 2 - gap * 3) / SIZE;
-}
-
 function getTilePosition(idx) {
-  const boardRect = boardEl.getBoundingClientRect();
-  const gap = parseFloat(getComputedStyle(boardEl).gap) || 8;
-  const padding = parseFloat(getComputedStyle(boardEl).padding) || 8;
-  const size = (boardRect.width - padding * 2 - gap * 3) / SIZE;
+  const rect = boardEl.getBoundingClientRect();
+  const style = getComputedStyle(boardEl);
+  const gap = parseFloat(style.gap) || 8;
+  const pad = parseFloat(style.padding) || 8;
+  const size = (rect.width - pad * 2 - gap * 3) / SIZE;
   const col = idx % SIZE;
   const row = Math.floor(idx / SIZE);
   return {
-    x: padding + col * (size + gap),
-    y: padding + row * (size + gap),
+    x: pad + col * (size + gap),
+    y: pad + row * (size + gap),
     size,
   };
 }
 
 function renderBoard(animated = true) {
-  const boardRect = boardEl.getBoundingClientRect();
-  if (boardRect.width === 0) {
+  const rect = boardEl.getBoundingClientRect();
+  if (rect.width === 0) {
     requestAnimationFrame(() => renderBoard(animated));
     return;
   }
 
   if (!animated) {
-    // Disable transitions for instant placement
-    Object.values(tileElements).forEach(el => {
-      el.style.transition = 'none';
-    });
+    Object.values(tileElements).forEach(el => { el.style.transition = 'none'; });
   }
 
   for (let i = 0; i < board.length; i++) {
@@ -173,36 +213,53 @@ function renderBoard(animated = true) {
   }
 
   if (!animated) {
-    // Re-enable transitions after paint
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        Object.values(tileElements).forEach(el => {
-          el.style.transition = '';
-        });
+        Object.values(tileElements).forEach(el => { el.style.transition = ''; });
       });
     });
   }
 }
 
-function animateTile(el, fromIdx, toIdx) {
+function animateTiles(sequence, destinations) {
   isAnimating = true;
-  el.classList.add('moving');
-  const { x, y } = getTilePosition(toIdx);
-  el.style.transform = `translate(${x}px, ${y}px)`;
+  let pending = sequence.length;
 
-  // transitionend가 발생하지 않는 경우를 대비한 안전 타임아웃
-  const safetyTimer = setTimeout(() => {
-    el.classList.remove('moving');
-    isAnimating = false;
-  }, 500);
+  // board는 이미 업데이트된 상태 → destinations[k]에 올바른 값이 있음
+  sequence.forEach((fromIdx, k) => {
+    const value = board[destinations[k]];
+    const el = tileElements[value];
+    el.classList.add('moving');
 
-  el.addEventListener('transitionend', () => {
-    clearTimeout(safetyTimer);
-    el.classList.remove('moving');
-    isAnimating = false;
-  }, { once: true });
+    const { x, y, size } = getTilePosition(destinations[k]);
+    el.style.width = size + 'px';
+    el.style.height = size + 'px';
+    el.style.transform = `translate(${x}px, ${y}px)`;
+    el.style.fontSize = Math.floor(size * 0.38) + 'px';
+
+    const done = () => {
+      el.classList.remove('moving');
+      pending--;
+      if (pending === 0) {
+        isAnimating = false;
+        if (isSolved()) setTimeout(showWin, 150);
+      }
+    };
+
+    const safetyTimer = setTimeout(done, 500);
+    el.addEventListener('transitionend', () => {
+      clearTimeout(safetyTimer);
+      done();
+    }, { once: true });
+  });
 }
 
+function isSolved() {
+  for (let i = 0; i < 15; i++) {
+    if (board[i] !== i + 1) return false;
+  }
+  return board[15] === 0;
+}
 
 // ===========================
 // Timer
@@ -210,9 +267,7 @@ function animateTile(el, fromIdx, toIdx) {
 function startTimer() {
   timerInterval = setInterval(() => {
     seconds++;
-    const m = String(Math.floor(seconds / 60)).padStart(2, '0');
-    const s = String(seconds % 60).padStart(2, '0');
-    timerEl.textContent = `${m}:${s}`;
+    timerEl.textContent = formatTime(seconds);
   }, 1000);
 }
 
@@ -242,30 +297,30 @@ function showWin() {
 // Events
 // ===========================
 function bindEvents() {
-  // Tile click
+  // 타일 클릭
   boardEl.addEventListener('click', (e) => {
     const tile = e.target.closest('.tile');
     if (!tile) return;
     const value = parseInt(tile.textContent);
     const idx = board.indexOf(value);
-    tryMove(idx);
+    handleTileClick(idx);
   });
 
-  // Keyboard
+  // 키보드 방향키
   document.addEventListener('keydown', (e) => {
     const keyMap = {
-      ArrowUp:    () => moveDirKey('up'),
-      ArrowDown:  () => moveDirKey('down'),
-      ArrowLeft:  () => moveDirKey('left'),
-      ArrowRight: () => moveDirKey('right'),
+      ArrowUp:    'up',
+      ArrowDown:  'down',
+      ArrowLeft:  'left',
+      ArrowRight: 'right',
     };
     if (keyMap[e.key]) {
       e.preventDefault();
-      keyMap[e.key]();
+      moveDirKey(keyMap[e.key]);
     }
   });
 
-  // Touch
+  // 터치
   document.addEventListener('touchstart', (e) => {
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
@@ -275,8 +330,9 @@ function bindEvents() {
     const dx = e.changedTouches[0].clientX - touchStartX;
     const dy = e.changedTouches[0].clientY - touchStartY;
     const threshold = 30;
+
     if (Math.abs(dx) < threshold && Math.abs(dy) < threshold) {
-      // Treat as tap — find tapped tile
+      // 탭: 해당 타일 클릭 처리
       const el = document.elementFromPoint(
         e.changedTouches[0].clientX,
         e.changedTouches[0].clientY
@@ -285,11 +341,12 @@ function bindEvents() {
       if (tile) {
         const value = parseInt(tile.textContent);
         const idx = board.indexOf(value);
-        tryMove(idx);
+        handleTileClick(idx);
       }
       return;
     }
-    // Swipe: move the tile adjacent to empty in swipe direction
+
+    // 스와이프: 방향키와 동일하게 처리
     if (Math.abs(dx) > Math.abs(dy)) {
       moveDirKey(dx > 0 ? 'right' : 'left');
     } else {
@@ -297,10 +354,11 @@ function bindEvents() {
     }
   }, { passive: true });
 
-  // Buttons
+  // 버튼
   document.getElementById('btn-new').addEventListener('click', newGame);
   document.getElementById('btn-shuffle').addEventListener('click', () => {
     stopTimer();
+    isAnimating = false;
     shuffle();
     moves = 0;
     seconds = 0;
@@ -311,36 +369,17 @@ function bindEvents() {
   });
   document.getElementById('btn-play-again').addEventListener('click', newGame);
 
-  // Theme
+  // 테마
   document.querySelectorAll('.theme-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const theme = btn.dataset.theme;
-      document.body.className = `theme-${theme}`;
+      document.body.className = `theme-${btn.dataset.theme}`;
       document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
     });
   });
 
-  // Resize / orientation
-  window.addEventListener('resize', () => {
-    renderBoard(false);
-  });
-}
-
-// Keyboard: arrow key moves the tile INTO the empty space from that direction
-// e.g. ArrowUp = move the tile BELOW the empty up into empty (empty moves down)
-function moveDirKey(dir) {
-  const eRow = Math.floor(emptyIndex / SIZE);
-  const eCol = emptyIndex % SIZE;
-  let targetIdx = -1;
-
-  switch (dir) {
-    case 'up':    if (eRow < SIZE - 1) targetIdx = emptyIndex + SIZE; break;
-    case 'down':  if (eRow > 0)        targetIdx = emptyIndex - SIZE; break;
-    case 'left':  if (eCol < SIZE - 1) targetIdx = emptyIndex + 1;    break;
-    case 'right': if (eCol > 0)        targetIdx = emptyIndex - 1;    break;
-  }
-  if (targetIdx !== -1) tryMove(targetIdx);
+  // 화면 크기/방향 변경
+  window.addEventListener('resize', () => renderBoard(false));
 }
 
 // ===========================

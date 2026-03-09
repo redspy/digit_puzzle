@@ -9,19 +9,17 @@
   --tile-hover: #3a3a3a;
   --tile-text: #f0f0f0;
   --accent: #bb86fc;
-  --accent2: #03dac6;
   --text: #e0e0e0;
-  --text-muted: #888;
+  --text-muted: #777;
   --border: #333;
   --shadow: rgba(0, 0, 0, 0.5);
-  --btn-bg: #2e2e2e;
+  --btn-bg: #2a2a2a;
   --btn-text: #e0e0e0;
   --btn-primary-bg: #bb86fc;
   --btn-primary-text: #000;
-  --radius: 12px;
+  --radius: 14px;
   --tile-radius: 10px;
-  --gap: clamp(4px, 1.2vw, 10px);
-  --transition-speed: 0.18s;
+  --gap: clamp(5px, 1.2vw, 10px);
 }
 
 .theme-ocean {
@@ -32,9 +30,8 @@
   --tile-hover: #164080;
   --tile-text: #e0f4ff;
   --accent: #00b4d8;
-  --accent2: #48cae4;
   --text: #caf0f8;
-  --text-muted: #6aacbf;
+  --text-muted: #5a8ea0;
   --border: #1a3a5c;
   --shadow: rgba(0, 0, 0, 0.6);
   --btn-bg: #0f3460;
@@ -51,9 +48,8 @@
   --tile-hover: #265038;
   --tile-text: #d4edda;
   --accent: #52b788;
-  --accent2: #74c69d;
   --text: #c8e6c9;
-  --text-muted: #6a9975;
+  --text-muted: #5a8060;
   --border: #1e3d2a;
   --shadow: rgba(0, 0, 0, 0.5);
   --btn-bg: #1e3d2a;
@@ -70,9 +66,8 @@
   --tile-hover: #3d2210;
   --tile-text: #ffe8d6;
   --accent: #e76f51;
-  --accent2: #f4a261;
   --text: #ffddd2;
-  --text-muted: #a0705a;
+  --text-muted: #8a5a48;
   --border: #3d2210;
   --shadow: rgba(0, 0, 0, 0.5);
   --btn-bg: #2e1a0e;
@@ -105,16 +100,28 @@ body {
 }
 
 /* ===========================
-   App Layout
+   App — 전체 화면 중앙 정렬
    =========================== */
 .app {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  height: 100%;
   height: 100dvh;
   padding: clamp(8px, 2vw, 20px);
-  gap: clamp(6px, 1.5vw, 16px);
+}
+
+/* ===========================
+   Panel — 게임판 기준 컨테이너
+   게임판·헤더·컨트롤이 동일 너비로 정렬됨
+   =========================== */
+.panel {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: clamp(8px, 1.5vh, 14px);
+  /* 너비 = 게임판 크기 (정사각형 기준) */
+  width: min(90vw, calc(100dvh - clamp(140px, 22vh, 200px)));
 }
 
 /* ===========================
@@ -124,68 +131,59 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-shrink: 0;
-  padding: clamp(8px, 1.5vw, 14px) clamp(12px, 2vw, 20px);
+  padding: clamp(10px, 1.8vh, 16px) clamp(14px, 2vw, 20px);
   background: var(--surface);
   border-radius: var(--radius);
   border: 1px solid var(--border);
+  transition: background 0.4s ease, border-color 0.4s ease;
 }
 
 .title {
-  font-size: clamp(16px, 3vw, 24px);
+  font-size: clamp(15px, 2.5vw, 22px);
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   color: var(--accent);
+  transition: color 0.4s ease;
 }
 
 .stats {
   display: flex;
-  gap: clamp(12px, 2vw, 24px);
+  align-items: center;
+  gap: clamp(8px, 1.5vw, 16px);
 }
 
 .stat {
-  font-size: clamp(12px, 1.8vw, 15px);
+  font-size: clamp(11px, 1.6vw, 14px);
   color: var(--text-muted);
+  letter-spacing: 0.02em;
+  transition: color 0.4s ease;
 }
 
 .stat strong {
   color: var(--text);
   font-weight: 600;
+  margin-left: 4px;
+  transition: color 0.4s ease;
+}
+
+.stat-sep {
+  width: 1px;
+  height: 14px;
+  background: var(--border);
 }
 
 /* ===========================
-   Main / Board
+   Board
    =========================== */
-.main {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 0;
-}
-
-.board-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-}
-
 .board {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(4, 1fr);
-  gap: var(--gap);
-  padding: var(--gap);
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
   background: var(--surface);
   border-radius: var(--radius);
   border: 1px solid var(--border);
   box-shadow: 0 8px 32px var(--shadow);
-  position: relative;
-  /* Size: fit into available space while keeping square */
-  width: min(calc(100vw - clamp(16px, 4vw, 40px)), calc(100dvh - 200px));
-  height: min(calc(100vw - clamp(16px, 4vw, 40px)), calc(100dvh - 200px));
+  padding: var(--gap);
   transition: background 0.4s ease, border-color 0.4s ease;
 }
 
@@ -200,93 +198,77 @@ body {
   background: var(--tile-bg);
   color: var(--tile-text);
   font-weight: 700;
-  font-size: clamp(14px, 3.5vw, 28px);
   border-radius: var(--tile-radius);
   border: 1px solid var(--border);
   cursor: pointer;
   user-select: none;
   box-shadow: 0 2px 8px var(--shadow);
   transition:
-    transform var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
     background 0.2s ease,
-    box-shadow 0.2s ease,
     border-color 0.4s ease;
   will-change: transform;
 }
 
 .tile:hover {
   background: var(--tile-hover);
-  box-shadow: 0 4px 16px var(--shadow);
 }
-
 
 .tile.moving {
   z-index: 10;
-  box-shadow: 0 8px 24px var(--shadow);
+  box-shadow: 0 6px 20px var(--shadow);
+  transition:
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.2s ease,
+    border-color 0.4s ease;
 }
 
 /* ===========================
-   Footer
+   Controls
    =========================== */
-.footer {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: clamp(6px, 1.2vw, 12px);
-  padding: clamp(8px, 1.5vw, 14px) clamp(12px, 2vw, 20px);
-  background: var(--surface);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-}
-
 .controls {
   display: flex;
   gap: clamp(8px, 1.5vw, 12px);
   justify-content: center;
 }
 
+/* ===========================
+   Themes
+   =========================== */
 .themes {
   display: flex;
   align-items: center;
-  gap: clamp(6px, 1.2vw, 10px);
   justify-content: center;
-  flex-wrap: wrap;
-}
-
-.theme-label {
-  font-size: clamp(11px, 1.5vw, 13px);
-  color: var(--text-muted);
+  gap: clamp(6px, 1.2vw, 10px);
 }
 
 /* ===========================
    Buttons
    =========================== */
 .btn {
-  padding: clamp(6px, 1.2vw, 10px) clamp(14px, 2.5vw, 24px);
+  padding: clamp(7px, 1.3vh, 11px) clamp(16px, 3vw, 28px);
   border: 1px solid var(--border);
   border-radius: 8px;
-  font-size: clamp(12px, 1.8vw, 14px);
+  font-size: clamp(12px, 1.6vw, 14px);
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
   background: var(--btn-bg);
   color: var(--btn-text);
+  transition: background 0.2s ease, transform 0.1s ease, filter 0.2s ease;
 }
 
 .btn:active {
-  transform: scale(0.96);
+  transform: scale(0.95);
 }
 
 .btn-primary {
   background: var(--btn-primary-bg);
   color: var(--btn-primary-text);
   border-color: transparent;
-  box-shadow: 0 2px 8px var(--shadow);
 }
 
 .btn-primary:hover {
   filter: brightness(1.1);
-  box-shadow: 0 4px 14px var(--shadow);
 }
 
 .btn-secondary:hover {
@@ -294,15 +276,15 @@ body {
 }
 
 .theme-btn {
-  padding: clamp(4px, 0.8vw, 7px) clamp(10px, 1.8vw, 16px);
+  padding: clamp(4px, 0.8vh, 7px) clamp(10px, 2vw, 18px);
   border: 1px solid var(--border);
   border-radius: 20px;
-  font-size: clamp(11px, 1.5vw, 13px);
+  font-size: clamp(11px, 1.4vw, 13px);
   font-weight: 500;
   cursor: pointer;
   background: var(--btn-bg);
   color: var(--btn-text);
-  transition: background 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
 }
 
 .theme-btn:hover {
@@ -316,7 +298,7 @@ body {
 }
 
 .theme-btn:active {
-  transform: scale(0.95);
+  transform: scale(0.94);
 }
 
 /* ===========================
@@ -325,7 +307,7 @@ body {
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.75);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -333,7 +315,7 @@ body {
   pointer-events: none;
   transition: opacity 0.3s ease;
   z-index: 100;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(6px);
 }
 
 .overlay.show {
@@ -345,14 +327,14 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: clamp(24px, 5vw, 48px) clamp(28px, 6vw, 56px);
+  padding: clamp(28px, 5vh, 52px) clamp(32px, 6vw, 60px);
   text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  box-shadow: 0 16px 48px var(--shadow);
-  transform: scale(0.9);
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  gap: 14px;
+  box-shadow: 0 20px 60px var(--shadow);
+  transform: scale(0.88);
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .overlay.show .result-card {
@@ -360,15 +342,18 @@ body {
 }
 
 .result-card h2 {
-  font-size: clamp(20px, 4vw, 32px);
+  font-size: clamp(20px, 4vw, 30px);
   color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.05em;
 }
 
 .result-card p {
-  font-size: clamp(14px, 2.5vw, 18px);
+  font-size: clamp(13px, 2vw, 16px);
   color: var(--text-muted);
 }
 
 .result-card strong {
   color: var(--text);
+  font-weight: 600;
 }
