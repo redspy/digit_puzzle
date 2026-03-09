@@ -110,7 +110,6 @@ function tryMove(tileIndex) {
   movesEl.textContent = moves;
 
   animateTile(tileElements[value], tileIndex, destIndex);
-  updateMovableHints();
 
   if (isSolved()) {
     setTimeout(showWin, 350);
@@ -180,11 +179,8 @@ function renderBoard(animated = true) {
         Object.values(tileElements).forEach(el => {
           el.style.transition = '';
         });
-        updateMovableHints();
       });
     });
-  } else {
-    updateMovableHints();
   }
 }
 
@@ -207,14 +203,6 @@ function animateTile(el, fromIdx, toIdx) {
   }, { once: true });
 }
 
-function updateMovableHints() {
-  Object.values(tileElements).forEach(el => el.classList.remove('movable'));
-  const neighbors = getNeighbors(emptyIndex);
-  neighbors.forEach(idx => {
-    const v = board[idx];
-    if (v !== 0) tileElements[v].classList.add('movable');
-  });
-}
 
 // ===========================
 // Timer

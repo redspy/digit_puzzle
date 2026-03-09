@@ -219,10 +219,6 @@ body {
   box-shadow: 0 4px 16px var(--shadow);
 }
 
-.tile.movable {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent), 0 2px 8px var(--shadow);
-}
 
 .tile.moving {
   z-index: 10;
