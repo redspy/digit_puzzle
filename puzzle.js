@@ -258,20 +258,45 @@ function isSolved() {
 
 /**
  * 보드 인덱스 → 타일의 픽셀 위치(x, y) 및 크기(size) 계산.
- * boardEl의 실제 렌더링 크기를 기준으로 gap·padding을 반영.
+ *
+ * 좌표 기준:
+ *   - position: absolute 타일의 원점은 padding box의 좌상단 (border 안쪽)
+ *   - 따라서 clientWidth/clientHeight (border 제외, padding 포함) 사용
+ *   - 가로·세로 중 작은 축 기준으로 타일 크기를 결정하여 항상 정사각형 유지
+ *   - 남는 공간은 offset으로 균등 분배하여 정중앙 배치
  */
 function getTilePosition(idx) {
-  const rect  = boardEl.getBoundingClientRect();
+  const cw    = boardEl.clientWidth;   // border 제외한 내부 너비
+  const ch    = boardEl.clientHeight;  // border 제외한 내부 높이
   const style = getComputedStyle(boardEl);
-  const gap   = parseFloat(style.gap)     || 8;
-  const pad   = parseFloat(style.padding) || 8;
-  // 타일 1개의 크기: (전체 너비 - 양쪽 패딩 - 3개의 gap) / 4
-  const size  = (rect.width - pad * 2 - gap * 3) / SIZE;
-  const col   = idx % SIZE;
-  const row   = Math.floor(idx / SIZE);
+  const gap   = parseFloat(style.gap) || 8;
+  const padL  = parseFloat(style.paddingLeft)   || 0;
+  const padR  = parseFloat(style.paddingRight)  || 0;
+  const padT  = parseFloat(style.paddingTop)    || 0;
+  const padB  = parseFloat(style.paddingBottom) || 0;
+
+  // 사용 가능한 콘텐츠 영역 (padding 제외)
+  const contentW = cw - padL - padR;
+  const contentH = ch - padT - padB;
+
+  // 가로·세로 각각에서 가능한 타일 크기를 구한 뒤 작은 값 선택 → 정사각형 보장
+  const sizeByW = (contentW - gap * (SIZE - 1)) / SIZE;
+  const sizeByH = (contentH - gap * (SIZE - 1)) / SIZE;
+  const size    = Math.min(sizeByW, sizeByH);
+
+  // 타일 그리드 전체 크기
+  const gridW = size * SIZE + gap * (SIZE - 1);
+  const gridH = size * SIZE + gap * (SIZE - 1);
+
+  // padding 영역 내에서 그리드를 정중앙에 배치하기 위한 offset
+  const offsetX = padL + (contentW - gridW) / 2;
+  const offsetY = padT + (contentH - gridH) / 2;
+
+  const col = idx % SIZE;
+  const row = Math.floor(idx / SIZE);
   return {
-    x: pad + col * (size + gap),
-    y: pad + row * (size + gap),
+    x: offsetX + col * (size + gap),
+    y: offsetY + row * (size + gap),
     size,
   };
 }
@@ -282,9 +307,8 @@ function getTilePosition(idx) {
  * animated = true : transition 활성화 상태로 렌더링 (일반적으로 사용 안 함)
  */
 function renderBoard(animated = true) {
-  const rect = boardEl.getBoundingClientRect();
   // boardEl이 아직 화면에 렌더링되지 않은 경우 다음 프레임에 재시도
-  if (rect.width === 0) {
+  if (boardEl.clientWidth === 0) {
     requestAnimationFrame(() => renderBoard(animated));
     return;
   }
