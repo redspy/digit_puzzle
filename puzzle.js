@@ -103,12 +103,13 @@ function tryMove(tileIndex) {
   }
 
   const value = board[tileIndex];
+  const destIndex = emptyIndex; // 이동 목적지(현재 빈칸 위치)를 미리 저장
   swap(tileIndex, emptyIndex);
   emptyIndex = tileIndex;
   moves++;
   movesEl.textContent = moves;
 
-  animateTile(tileElements[value], tileIndex, emptyIndex);
+  animateTile(tileElements[value], tileIndex, destIndex);
   updateMovableHints();
 
   if (isSolved()) {
@@ -193,7 +194,14 @@ function animateTile(el, fromIdx, toIdx) {
   const { x, y } = getTilePosition(toIdx);
   el.style.transform = `translate(${x}px, ${y}px)`;
 
+  // transitionend가 발생하지 않는 경우를 대비한 안전 타임아웃
+  const safetyTimer = setTimeout(() => {
+    el.classList.remove('moving');
+    isAnimating = false;
+  }, 500);
+
   el.addEventListener('transitionend', () => {
+    clearTimeout(safetyTimer);
     el.classList.remove('moving');
     isAnimating = false;
   }, { once: true });
