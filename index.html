@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Digit Puzzle</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="theme-dark">
+  <div class="app">
+    <header class="header">
+      <h1 class="title">Digit Puzzle</h1>
+      <div class="stats">
+        <span class="stat">이동: <strong id="moves">0</strong></span>
+        <span class="stat">시간: <strong id="timer">00:00</strong></span>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="board-wrapper">
+        <div class="board" id="board"></div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="controls">
+        <button class="btn btn-primary" id="btn-new">새 게임</button>
+        <button class="btn btn-secondary" id="btn-shuffle">섞기</button>
+      </div>
+      <div class="themes">
+        <span class="theme-label">테마</span>
+        <button class="theme-btn active" data-theme="dark">Dark</button>
+        <button class="theme-btn" data-theme="ocean">Ocean</button>
+        <button class="theme-btn" data-theme="forest">Forest</button>
+        <button class="theme-btn" data-theme="sunset">Sunset</button>
+      </div>
+    </footer>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="result-card">
+      <h2>🎉 퍼즐 완성!</h2>
+      <p>이동 횟수: <strong id="result-moves"></strong></p>
+      <p>소요 시간: <strong id="result-time"></strong></p>
+      <button class="btn btn-primary" id="btn-play-again">다시 하기</button>
+    </div>
+  </div>
+
+  <script src="puzzle.js"></script>
+</body>
+</html>
